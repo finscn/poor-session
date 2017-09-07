@@ -15,6 +15,8 @@ PoorSession.reservedProperties = [
 
 var proto = {
 
+    autoTouch: true,
+
     maxAge: 20 * (60 * 1000),
 
     sessionKey: 'X-Poor-Session',
@@ -35,10 +37,14 @@ var proto = {
         var sess = id ? this.store[id] : null;
         if (!sess) {
             sess = this.createSession();
+        } else if (this.autoTouch) {
+            this.touch(sess);
         }
+
         if (res) {
             res.set(this.sessionKey, sess.sessionId);
         }
+
         return sess;
     },
     // res : express response object
