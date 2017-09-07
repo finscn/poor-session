@@ -29,17 +29,23 @@ var proto = {
     },
 
     // req : express request object
-    requestSession: function(req) {
+    // res : express response object
+    requestSession: function(req, res) {
         var id = req.get(this.sessionKey);
         var sess = id ? this.store[id] : null;
         if (!sess) {
             sess = this.createSession();
         }
+        if (res) {
+            res.set(this.sessionKey, sess.sessionId);
+        }
         return sess;
     },
     // res : express response object
     responseSession: function(res, sess) {
-        res.set(this.sessionKey, sess.sessionId);
+        if (sess) {
+            res.set(this.sessionKey, sess.sessionId);
+        }
     },
 
     getSession: function(id) {
@@ -110,14 +116,14 @@ var proto = {
     },
 
     clearAllSessions: function() {
-        for (var id in this.store){
-            var sess=this.store[id];
+        for (var id in this.store) {
+            var sess = this.store[id];
             this.clearSession(sess);
         }
     },
     destroyAllSessions: function() {
-        for (var id in this.store){
-            var sess=this.store[id];
+        for (var id in this.store) {
+            var sess = this.store[id];
             this.destroySession(sess);
         }
     },
