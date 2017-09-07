@@ -21,7 +21,7 @@ var proto = {
 
     init: function() {
         this.store = {};
-        this.destoryTask = {};
+        this.destroyTask = {};
     },
 
     generateSessionId: function(sess) {
@@ -74,10 +74,10 @@ var proto = {
         var Me = this;
         var maxAge = ("sessionMaxAge" in sess ? sess.sessionMaxAge : this.maxAge) || 0;
         var id = sess.sessionId;
-        clearTimeout(this.destoryTask[id]);
+        clearTimeout(this.destroyTask[id]);
         if (maxAge) {
-            this.destoryTask[id] = setTimeout(function() {
-                Me.destorySession(sess);
+            this.destroyTask[id] = setTimeout(function() {
+                Me.destroySession(sess);
             }, maxAge);
         }
     },
@@ -97,15 +97,15 @@ var proto = {
         return removed;
     },
 
-    destorySession: function(sess) {
+    destroySession: function(sess) {
         if (sess) {
             var id = sess.sessionId;
             delete this.store[id];
-            this.afterDestorySession(sess);
+            this.afterDestroySession(sess);
         }
         return sess;
     },
-    afterDestorySession: function(sess) {
+    afterDestroySession: function(sess) {
 
     },
 
@@ -115,10 +115,10 @@ var proto = {
             this.clearSession(sess);
         }
     },
-    destoryAllSessions: function() {
+    destroyAllSessions: function() {
         for (var id in this.store){
             var sess=this.store[id];
-            this.destorySession(sess);
+            this.destroySession(sess);
         }
     },
 };
