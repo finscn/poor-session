@@ -17,7 +17,7 @@ var proto = {
 
     maxAge: 20 * (60 * 1000),
 
-    sessionKey: 'X-poor-Sess',
+    sessionKey: 'X-Poor-Session',
 
     init: function() {
         this.store = {};
