@@ -113,6 +113,8 @@ var proto = {
         if (sess) {
             var id = sess.sessionId;
             delete this.store[id];
+            clearTimeout(this.destroyTask[id]);
+            delete this.destroyTask[id];
             this.afterDestroySession(sess);
         }
         return sess;
