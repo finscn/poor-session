@@ -2,7 +2,7 @@
 var PseudoSession = require('..');
 
 var pseudoSess = new PseudoSession({
-    maxAge: 1000 * 5,
+    sessionMaxAge: 1000 * 5,
     afterDestroySession: function(session) {
         console.log("afterDestroySession", session);
     }

@@ -17,7 +17,7 @@ var proto = {
 
     autoTouch: true,
 
-    maxAge: 20 * (60 * 1000),
+    sessionMaxAge: 20 * (60 * 1000),
 
     sessionKey: 'X-Poor-Session',
 
@@ -84,7 +84,7 @@ var proto = {
 
     touch: function(sess) {
         var Me = this;
-        var maxAge = ("sessionMaxAge" in sess ? sess.sessionMaxAge : this.maxAge) || 0;
+        var maxAge = ("sessionMaxAge" in sess ? sess.sessionMaxAge : this.sessionMaxAge) || 0;
         var id = sess.sessionId;
         clearTimeout(this.destroyTask[id]);
         if (maxAge) {
