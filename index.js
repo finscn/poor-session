@@ -56,7 +56,6 @@ var proto = {
             sess = this.createSession();
         } else {
             var e = this.sessionExpires[id];
-            console.log(e,Date.now())
             if (e > 0 && e <= Date.now()) {
                 sess = this.store[id];
                 this.destroySession(sess);
