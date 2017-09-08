@@ -10,7 +10,6 @@ var PoorSession = function(options) {
 
 PoorSession.reservedProperties = [
     "sessionId",
-    "sessionMaxAge",
 ];
 
 var proto = {
@@ -21,9 +20,16 @@ var proto = {
 
     sessionKey: 'X-Poor-Session',
 
+    interval: 1000 * 10,
+
     init: function() {
         this.store = {};
-        this.destroyTask = {};
+        this.sessionExpires = {};
+
+        var Me = this;
+        this.intervalTask = setInterval(function() {
+            Me.checkExpires();
+        }, this.interval);
     },
 
     generateSessionId: function(sess) {
@@ -34,12 +40,8 @@ var proto = {
     // res : express response object
     requestSession: function(req, res) {
         var id = req.get(this.sessionKey);
-        var sess = id ? this.store[id] : null;
-        if (!sess) {
-            sess = this.createSession();
-        } else if (this.autoTouch) {
-            this.touch(sess);
-        }
+
+        var sess = this.loadSession(id);
 
         if (res) {
             res.set(this.sessionKey, sess.sessionId);
@@ -47,11 +49,23 @@ var proto = {
 
         return sess;
     },
-    // res : express response object
-    responseSession: function(res, sess) {
-        if (sess) {
-            res.set(this.sessionKey, sess.sessionId);
+
+    loadSession: function(id) {
+        var sess = id ? this.store[id] : null;
+        if (!sess) {
+            sess = this.createSession();
+        } else {
+            var e = this.sessionExpires[id];
+            console.log(e,Date.now())
+            if (e > 0 && e <= Date.now()) {
+                sess = this.store[id];
+                this.destroySession(sess);
+                sess = this.createSession();
+            } else if (this.autoTouch) {
+                this.touch(sess);
+            }
         }
+        return sess;
     },
 
     getSession: function(id) {
@@ -84,13 +98,21 @@ var proto = {
 
     touch: function(sess) {
         var Me = this;
-        var maxAge = ("sessionMaxAge" in sess ? sess.sessionMaxAge : this.sessionMaxAge) || 0;
+        var maxAge = this.sessionMaxAge || 0;
         var id = sess.sessionId;
-        clearTimeout(this.destroyTask[id]);
         if (maxAge) {
-            this.destroyTask[id] = setTimeout(function() {
-                Me.destroySession(sess);
-            }, maxAge);
+            this.sessionExpires[id] = Date.now() + maxAge;
+        }
+    },
+
+    checkExpires: function() {
+        var now = Date.now();
+        for (var id in this.store) {
+            var e = this.sessionExpires[id];
+            if (e > 0 && e <= now) {
+                var sess = this.store[id];
+                this.destroySession(sess);
+            }
         }
     },
 
@@ -112,9 +134,8 @@ var proto = {
     destroySession: function(sess) {
         if (sess) {
             var id = sess.sessionId;
+            delete this.sessionExpires[id];
             delete this.store[id];
-            clearTimeout(this.destroyTask[id]);
-            delete this.destroyTask[id];
             this.afterDestroySession(sess);
         }
         return sess;
@@ -135,6 +156,11 @@ var proto = {
             this.destroySession(sess);
         }
     },
+
+    destroy: function() {
+        this.destroyAllSessions();
+        clearInterval(this.intervalTask);
+    }
 };
 
 for (var p in proto) {
