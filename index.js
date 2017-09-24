@@ -100,7 +100,7 @@ var proto = {
         this.stopCheckExpires();
         this.intervalTask = setInterval(function() {
             var removed = Me.checkExpires();
-            console.log("Expires: ", removed.length);
+            // console.log("Expires: ", removed.length);
         }, this.checkInterval);
     },
 
