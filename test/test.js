@@ -3,9 +3,10 @@ var PseudoSession = require('..');
 
 var pseudoSess = new PseudoSession({
     sessionMaxAge: 1000 * 5,
+    // checkInterval: 1000 * 1,
     autoTouch: false,
     afterDestroySession: function(session) {
-        console.log("afterDestroySession", session);
+        console.log("afterDestroySession: ", session);
     }
 });
 
