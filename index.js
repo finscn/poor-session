@@ -14,22 +14,21 @@ PoorSession.reservedProperties = [
 
 var proto = {
 
-    autoTouch: true,
-
+    sessionKey: 'X-Poor-Session',
     sessionMaxAge: 20 * (60 * 1000),
 
-    sessionKey: 'X-Poor-Session',
+    // if == 0, will not check expires automatically
+    checkInterval: 1000 * 10,
 
-    interval: 1000 * 10,
+    autoTouch: true,
 
     init: function() {
         this.store = {};
         this.sessionExpires = {};
 
-        var Me = this;
-        this.intervalTask = setInterval(function() {
-            Me.checkExpires();
-        }, this.interval);
+        if (this.checkInterval) {
+            this.startCheckExpires();
+        }
     },
 
     generateSessionId: function(sess) {
@@ -56,7 +55,7 @@ var proto = {
             sess = this.createSession();
         } else {
             var e = this.sessionExpires[id];
-            if (e > 0 && e <= Date.now()) {
+            if (e <= Date.now()) {
                 sess = this.store[id];
                 this.destroySession(sess);
                 sess = this.createSession();
@@ -91,28 +90,46 @@ var proto = {
 
         return sess;
     },
+
     afterCreateSession: function(sess) {
 
     },
 
-    touch: function(sess) {
+    startCheckExpires: function() {
         var Me = this;
-        var maxAge = this.sessionMaxAge || 0;
-        var id = sess.sessionId;
-        if (maxAge) {
-            this.sessionExpires[id] = Date.now() + maxAge;
-        }
+        this.stopCheckExpires();
+        this.intervalTask = setInterval(function() {
+            var removed = Me.checkExpires();
+            console.log("Expires: ", removed.length);
+        }, this.checkInterval);
+    },
+
+    stopCheckExpires: function() {
+        clearInterval(this.intervalTask);
     },
 
     checkExpires: function() {
         var now = Date.now();
+        var removed = [];
         for (var id in this.store) {
             var e = this.sessionExpires[id];
-            if (e > 0 && e <= now) {
+            if (e <= now) {
                 var sess = this.store[id];
+                removed.push(sess);
                 this.destroySession(sess);
             }
         }
+        return removed;
+    },
+
+    touch: function(sess) {
+        var Me = this;
+        var maxAge = this.sessionMaxAge;
+        if (maxAge <= 0) {
+            maxAge = Infinity;
+        }
+        var id = sess.sessionId;
+        this.sessionExpires[id] = Date.now() + maxAge;
     },
 
     clearSession: function(sess) {
@@ -157,8 +174,8 @@ var proto = {
     },
 
     destroy: function() {
+        this.stopCheckExpires();
         this.destroyAllSessions();
-        clearInterval(this.intervalTask);
     }
 };
 
