@@ -8,14 +8,21 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:finscn/poor-session.git"
+    "url": "git+ssh://git@github.com/finscn/poor-session.git"
   },
-  "author": {
-    "name": "finscn",
-    "email": "finscn@gmail.com"
-  },
+  "author": "finscn <finscn@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "uid-safe": "^2.1.5"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/finscn/poor-session/issues"
+  },
+  "homepage": "https://github.com/finscn/poor-session#readme",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": [
+    "session"
+  ]
 }
