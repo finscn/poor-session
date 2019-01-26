@@ -10,6 +10,8 @@ var PoorSession = function(options) {
 
 PoorSession.reservedProperties = [
     "sessionId",
+    "maxAge",
+    "expires",
 ];
 
 var proto = {
@@ -18,16 +20,15 @@ var proto = {
     sessionMaxAge: 20 * (60 * 1000),
 
     // if == 0, will not check expires automatically
-    checkInterval: 1000 * 10,
+    cleanUpInterval: 20 * 1000,
 
     autoTouch: true,
 
     init: function() {
         this.store = {};
-        this.sessionExpires = {};
 
-        if (this.checkInterval) {
-            this.startCheckExpires();
+        if (this.cleanUpInterval) {
+            this.startCleanUp();
         }
     },
 
@@ -54,13 +55,11 @@ var proto = {
         if (!sess) {
             sess = this.createSession();
         } else {
-            var e = this.sessionExpires[id];
-            if (e <= Date.now()) {
-                sess = this.store[id];
+            if (sess.expires <= Date.now()) {
                 this.destroySession(sess);
                 sess = this.createSession();
             } else if (this.autoTouch) {
-                this.touch(sess);
+                this.touchSession(sess);
             }
         }
         return sess;
@@ -72,7 +71,9 @@ var proto = {
     },
 
     createSession: function(options) {
-        var sess = {};
+        var sess = {
+            "maxAge": this.sessionMaxAge
+        };
         if (options) {
             for (var p in options) {
                 sess[p] = options[p];
@@ -81,10 +82,9 @@ var proto = {
 
         var id = this.generateSessionId(sess);
         sess.sessionId = id;
+        this.touchSession(sess);
 
         this.store[id] = sess;
-
-        this.touch(sess);
 
         this.afterCreateSession(sess);
 
@@ -95,71 +95,68 @@ var proto = {
 
     },
 
-    startCheckExpires: function() {
+    startCleanUp: function() {
         var Me = this;
-        this.stopCheckExpires();
-        this.intervalTask = setInterval(function() {
-            var removed = Me.checkExpires();
-            // console.log("Expires: ", removed.length);
-        }, this.checkInterval);
+        this.stopCleanUp();
+        this._cleanUpIntervalId = setInterval(function() {
+            var removedCount = Me.cleanUp();
+            // console.log("Expired & Removed : ", removedCount);
+        }, this.cleanUpInterval);
     },
 
-    stopCheckExpires: function() {
-        clearInterval(this.intervalTask);
+    stopCleanUp: function() {
+        clearInterval(this._cleanUpIntervalId);
     },
 
-    checkExpires: function() {
+    cleanUp: function() {
         var now = Date.now();
-        var removed = [];
+        var count = 0;
         for (var id in this.store) {
-            var e = this.sessionExpires[id];
-            if (e <= now) {
-                var sess = this.store[id];
-                removed.push(sess);
+            var sess = this.store[id];
+            if (sess && sess.expires <= now) {
+                count++;
                 this.destroySession(sess);
             }
         }
-        return removed;
+        return count;
     },
 
-    touch: function(sess) {
-        var Me = this;
-        var maxAge = this.sessionMaxAge;
+    touchSession: function(sess) {
+        maxAge = sess.maxAge || 0;
         if (maxAge <= 0) {
             maxAge = Infinity;
         }
-        var id = sess.sessionId;
-        this.sessionExpires[id] = Date.now() + maxAge;
+        sess.expires = Date.now() + maxAge;
     },
 
     clearSession: function(sess) {
-        var removed = null;
         if (sess) {
             var reserved = PoorSession.reservedProperties;
-            removed = {};
-            for (var key in sess) {
-                if (reserved.indexOf(key) === -1) {
-                    removed[key] = sess[key];
-                    delete sess[key];
+            for (var p in sess) {
+                if (reserved.indexOf(p) === -1) {
+                    delete sess[p];
                 }
             }
         }
-        return removed;
+        return sess;
     },
 
     destroySession: function(sess) {
         if (sess) {
-            var id = sess.sessionId;
-            delete this.sessionExpires[id];
-            delete this.store[id];
+            delete this.store[sess.sessionId];
             this.afterDestroySession(sess);
         }
-        return sess;
     },
     afterDestroySession: function(sess) {
 
     },
 
+    touchAllSessions: function() {
+        for (var id in this.store) {
+            var sess = this.store[id];
+            this.touchSession(sess);
+        }
+    },
     clearAllSessions: function() {
         for (var id in this.store) {
             var sess = this.store[id];
@@ -174,7 +171,7 @@ var proto = {
     },
 
     destroy: function() {
-        this.stopCheckExpires();
+        this.stopCleanUp();
         this.destroyAllSessions();
     }
 };
